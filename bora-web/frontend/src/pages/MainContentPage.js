@@ -15,8 +15,10 @@ import {
   TextField,
   Button,
 } from "@mui/material";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { getSafeExternalHref } from "../lib/safeUrl";
+
 import HomeIcon from "@mui/icons-material/Home";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
@@ -101,6 +103,10 @@ const MainContentPage = () => {
   const [draftWebLink, setDraftWebLink] = useState("");
   const [savingMeta, setSavingMeta] = useState(false);
 
+  const safeOriginalHref = mainContent
+    ? getSafeExternalHref(mainContent.web_link)
+    : undefined;
+
   const startEdit = () => {
     setDraftTitle(mainContent?.title ?? "");
     setDraftWebLink(mainContent?.web_link ?? "");
@@ -115,8 +121,8 @@ const MainContentPage = () => {
       toast.error("제목을 입력해주세요.");
       return;
     }
-    if (!/^https?:\/\/.+/i.test(webLink)) {
-      toast.error("올바른 URL 형식이 아닙니다.");
+    if (!getSafeExternalHref(webLink)) {
+      toast.error("http 또는 https 로 시작하는 올바른 URL을 입력해주세요.");
       return;
     }
 
@@ -362,8 +368,9 @@ const MainContentPage = () => {
           </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
+            {safeOriginalHref ? (
             <Link
-              href={mainContent.web_link}
+              href={safeOriginalHref}
               target="_blank"
               rel="noopener noreferrer"
               sx={{
@@ -384,6 +391,11 @@ const MainContentPage = () => {
               <OpenInNewIcon sx={{ fontSize: 14, flexShrink: 0 }} />
               원문 보기
             </Link>
+            ) : (
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                원문 링크 없음
+              </Typography>
+            )}
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               {mainContent.cTime}
             </Typography>
