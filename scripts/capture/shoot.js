@@ -2,11 +2,32 @@
 
 const path = require("path");
 const fs = require("fs");
+
+// Cursor 통합 터미널 등에서 PLAYWRIGHT_BROWSERS_PATH 가 샌드박스 tmp 를 가리키며
+// 브라우저 바이너리와 어긋나는 경우가 있음 → 유효하지 않으면 해제해 ~/.cache/ms-playwright 사용
+(function fixPlaywrightBrowsersPath() {
+  const p = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  if (!p) return;
+  const exe = path.join(
+    p,
+    "chromium_headless_shell-1217",
+    "chrome-headless-shell-linux64",
+    "chrome-headless-shell"
+  );
+  if (!fs.existsSync(exe)) {
+    delete process.env.PLAYWRIGHT_BROWSERS_PATH;
+  }
+})();
+
 const { chromium } = require("playwright");
 
 const FE = process.env.FRONTEND_URL || "http://localhost:4200";
 const OUT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 const DEMO = { username: "demo", password: "demo1234" };
+
+/** 상세·댓글·태그 캡쳐에 쓸 기사: 연합뉴스 에이전틱 AI 얼라이언스 */
+const DETAIL_SCREENSHOT_MATCH =
+  process.env.SHOOT_DETAIL_MATCH || /에이전틱\s*AI\s*얼라이언스|이젠\s*AI\s*생태계\s*전쟁/;
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -98,8 +119,16 @@ async function login(page) {
     }
 
     console.log("[shoot] 06. 상세 페이지");
-    const firstCard = page.locator("a[href^='/mainContents/']").first();
-    await firstCard.click();
+    const picked = page
+      .locator("a[href^='/mainContents/']")
+      .filter({ hasText: DETAIL_SCREENSHOT_MATCH })
+      .first();
+    if ((await picked.count()) > 0) {
+      await picked.click();
+    } else {
+      console.log("  연합뉴스 기사 카드 없음 → 첫 카드로 대체");
+      await page.locator("a[href^='/mainContents/']").first().click();
+    }
     await page.waitForLoadState("networkidle").catch(() => {});
     await page.waitForTimeout(800);
     await shot(page, "06-detail");
@@ -142,7 +171,7 @@ async function login(page) {
       await page.waitForTimeout(400);
       const tagInput = page.getByPlaceholder("태그를 입력하세요");
       if ((await tagInput.count()) > 0) {
-        await tagInput.fill("infinite-scroll");
+        await tagInput.fill("agentic-ai");
         await page.waitForTimeout(300);
       }
       await shot(page, "10-tag-add");

@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "postinstall": "env -u PLAYWRIGHT_BROWSERS_PATH npx playwright install chromium",
     "seed": "node seed.js",
     "shoot": "node shoot.js",
     "all": "node seed.js && node shoot.js"
