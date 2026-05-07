@@ -1,0 +1,7 @@
+{
+    "user_id": "admin",
+    "user_pw": "1234",
+    "host": "cluster0.8jvjjqh.mongodb.net",
+    "db": "bora",
+    "collection": "blog_posts"
+}

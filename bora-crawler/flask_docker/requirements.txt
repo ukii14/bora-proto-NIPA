@@ -1,0 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+flask
+flask_cors
+gunicorn
+pymongo
+dnspython
+selenium
+requests
+torch
+transformers
+sentencepiece

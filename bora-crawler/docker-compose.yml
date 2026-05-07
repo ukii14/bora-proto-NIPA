@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+    proxy:
+        depends_on:
+            - web
+        image: nginx:alpine
+        container_name: proxy
+        restart: always
+        ports:
+            - "9000:9000"
+        volumes:
+            - ./proxy/nginx.conf:/etc/nginx/nginx.conf
+
+    web:
+        image: nginx:latest
+        container_name: web
+        restart: always
+        ports:
+            - "8081:8080"
+        volumes:
+            - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ./flask_docker/flask_app/templates:/usr/share/nginx/html
+            - ./flask_docker/flask_app/static:/usr/share/nginx/static
+
+    flask:
+        build:
+            context: ./flask_docker
+            dockerfile: Dockerfile
+        container_name: flask
+        restart: always
+        ports:
+            - "24810:24810"
+        environment:
+            - SUMMARIZER=kobart
+        volumes:
+            - ./flask_docker/flask_app/static:/usr/src/flask_app/static
+            - hf-cache:/root/.cache/huggingface
+        command: gunicorn -w 1 -b 0.0.0.0:24810 wsgi:app --timeout 600
+
+volumes:
+    hf-cache: {}

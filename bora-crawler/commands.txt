@@ -1,0 +1,53 @@
+## Tutorial
+  - https://awsdocs-neuron.readthedocs-hosted.com/en/latest/neuron-guide/neuron-frameworks/pytorch-neuron/tutorials/tutorial-torchserve.html
+  - https://github.com/pytorch/serve/tree/master/docker
+  - https://pytorch.org/serve/configuration.html
+  - https://cloud.google.com/ai-platform/prediction/docs/getting-started-pytorch-container
+  - https://awsdocs-neuron.readthedocs-hosted.com/en/latest/neuron-guide/neuron-frameworks/pytorch-neuron/tutorials/tutorial-torchserve.html
+
+## Docker cheatsheet
+  - https://www.daleseo.com/docker-compose-networks/
+
+## Install java.
+sudo apt install openjdk-11-jdk
+
+java --version
+javac -version
+torchserve --version
+
+## Checkpoints to MAR(Model Archive) file.
+mkdir model-store
+
+torch-model-archiver \
+    --model-name bart \
+    --version 1.0 \
+    --serialized-file ./model-store/hft.gogamza.kobart-summarization.bs-48.lr-5e-5.warmup-2.radam.dev.05.4.73-112.90.3.28-26.67.pth \
+    --handler "./handler.py" \
+    --export-path ./model-store \
+    --force
+
+## Start torchserve.
+torchserve \
+    --start \
+    --ncs \
+    --ts-config ./torchserve.config \
+    --model-store ./model-store \
+    --models bart=bart.mar \
+    2>&1 > torchserve.log
+
+## Ping.
+/usr/bin/curl http://127.0.0.1:30371/ping
+
+## Request query.
+/usr/bin/curl -X POST http://127.0.0.1:30371/predictions/bart -T ./bora-crawler/torchserve/sample.txt
+
+## Stop torchserve.
+torchserve --stop
+
+## Run streamlit in localhost:8501.
+streamlit run infer.py
+
+## Stop and removell all.
+sudo docker stop $(sudo docker ps -a -q)
+sudo docker rm $(sudo docker ps -a -q)
+sudo docker rmi $(sudo docker images -q)
