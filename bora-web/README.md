@@ -14,6 +14,21 @@
 
 - frontend - package.json - "proxy": "http://localhost:5000",
 
+### 보안 (백엔드)
+
+- **helmet** — 보안 관련 HTTP 헤더
+- **express-mongo-sanitize** — 요청 데이터의 MongoDB 연산자 조작(NoSQL 인젝션) 완화
+- **express.json({ limit: "1mb" })** — JSON 본문 크기 제한
+- **세션 TTL** — 생성 시각 기준 7일 (`middleware/authentication.js` 의 `SESSION_TTL_MS`)
+- **원문 URL** — `utils/urlSecurity.js` 로 http/https 만 허용
+- **댓글·검색·태그** — 길이 상한(라우터에서 검증)
+
+SQL DB를 사용하지 않으므로 SQL 인젝션은 해당 없음.
+
+### 보안 (프론트)
+
+- **safeUrl.js** — 상세 페이지 `원문 보기` 링크에 http(s)만 사용
+
 #### docker 이미지로 시작하려면
 
 - frontend - package.json - "proxy": "http://backend:5000",
@@ -43,6 +58,10 @@ backend
 │   │   ├── index
 │   ├── uploads //사진 물리적 저장 (대체예정)
 ├── server.js
+├── utils
+│   ├── asyncHandler.js
+│   ├── response.js
+│   └── urlSecurity.js   // 원문 링크 http(s) 검증
 
 frontend
 |── src
@@ -57,6 +76,8 @@ frontend
 │ │ ├── SearchFeature //검색
 │ │ ├── Tags //카테고리기능
 │ │ ├── ToolBar //메뉴
+│ ├── lib
+│ │   └── safeUrl.js // 상세 화면 외부 링크 href 안전 처리
 │ ├── context //전역함수,변수,state관리
 │ │ ├── AuthContext //인증 관련
 │ │ ├── MainContentContext //메인 컨텐츠 관련
