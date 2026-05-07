@@ -1,5 +1,7 @@
 require("dotenv").config();
 const express = require("express");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
 const mongoose = require("mongoose");
 
 const { userRouter, mainContentRouter } = require("./routes");
@@ -24,10 +26,16 @@ mongoose
       console.warn("[index sync] failed:", err.message);
     }
 
+    app.use(
+      helmet({
+        contentSecurityPolicy: false,
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+      })
+    );
     // 이미지 파일들 외부로 노출시켜주기
     app.use("/uploads", express.static("uploads"));
-    // json파일이 있으면 파싱해서 body에 저장
-    app.use(express.json());
+    app.use(express.json({ limit: "1mb" }));
+    app.use(mongoSanitize());
     app.use(authenticate);
     // /images 로 시작하는 경로는 모두 imageRouter로!
     // app.use("/images", imageRouter);

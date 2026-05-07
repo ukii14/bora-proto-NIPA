@@ -7,6 +7,8 @@ const { HttpError } = require("../utils/response");
 
 const commentRouter = Router({ mergeParams: true });
 
+const MAX_COMMENT_LENGTH = 8000;
+
 commentRouter.post(
   "/saveComment",
   asyncHandler(async (req, res) => {
@@ -20,9 +22,13 @@ commentRouter.post(
     if (typeof req.body.content !== "string" || !req.body.content.trim()) {
       throw new HttpError("content가 비어 있습니다.");
     }
+    const text = req.body.content.trim();
+    if (text.length > MAX_COMMENT_LENGTH) {
+      throw new HttpError(`댓글은 ${MAX_COMMENT_LENGTH}자 이하여야 합니다.`);
+    }
 
     const saved = await new Comment({
-      content: req.body.content.trim(),
+      content: text,
       writer: req.user.id,
       postId: mainContentId,
     }).save();
@@ -67,6 +73,10 @@ commentRouter.patch(
     if (typeof content !== "string" || !content.trim()) {
       throw new HttpError("content is required");
     }
+    const text = content.trim();
+    if (text.length > MAX_COMMENT_LENGTH) {
+      throw new HttpError(`댓글은 ${MAX_COMMENT_LENGTH}자 이하여야 합니다.`);
+    }
 
     const original = await Comment.findById(commentId);
     if (!original) throw new HttpError("댓글을 찾을 수 없습니다.", 404);
@@ -77,7 +87,7 @@ commentRouter.patch(
 
     const comment = await Comment.findOneAndUpdate(
       { _id: commentId },
-      { content: content.trim() },
+      { content: text },
       { new: true }
     ).populate("writer");
 

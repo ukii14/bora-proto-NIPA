@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { User } = require("../models");
 
-const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const authenticate = async (req, res, next) => {
   try {

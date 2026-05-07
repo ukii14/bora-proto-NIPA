@@ -8,6 +8,7 @@ const { mainContentUpload } = require("../middleware");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { HttpError } = require("../utils/response");
 const { commentRouter } = require("./commentRouter");
+const { assertHttpUrl, normalizeOptionalHttpUrl } = require("../utils/urlSecurity");
 
 const fileUnlink = promisify(fs.unlink);
 const mainContentRouter = Router();
@@ -27,6 +28,8 @@ mainContentRouter.post(
   asyncHandler(async (req, res) => {
     if (!req.user) throw new HttpError("권한이 없습니다.", 401);
 
+    const webLink = normalizeOptionalHttpUrl(req.body.web_link);
+
     const mainContents = await Promise.all(
       req.files.map((file) =>
         new MainContent({
@@ -38,7 +41,7 @@ mainContentRouter.post(
           public: req.body.public,
           key: file.filename,
           originalFileName: file.originalname,
-          web_link: req.body.web_link,
+          ...(webLink ? { web_link: webLink } : {}),
           category: req.body.category,
         }).save()
       )
@@ -68,12 +71,16 @@ mainContentRouter.get(
 
 // 검색 — MongoDB 텍스트 인덱스($text) 우선, 결과 없으면 정규식 fallback (한국어 토큰 한계 보완)
 const SEARCH_LIMIT = 30;
+const MAX_SEARCH_LEN = 200;
 const escapeRegex = (raw) => raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 mainContentRouter.post(
   "/search",
   asyncHandler(async (req, res) => {
-    const value = (req.query.value ?? req.body.value ?? "").toString().trim();
+    let value = (req.query.value ?? req.body.value ?? "").toString().trim();
+    if (value.length > MAX_SEARCH_LEN) {
+      value = value.slice(0, MAX_SEARCH_LEN);
+    }
     if (!value) {
       return res.json({ success: true, contentsInfo: [], postSize: 0 });
     }
@@ -158,8 +165,6 @@ mainContentRouter.delete(
 );
 
 // 메타 수정 (작성자만, title / web_link 만 허용)
-const URL_REGEX = /^https?:\/\/.+/i;
-
 mainContentRouter.patch(
   "/:mainContentId/meta",
   asyncHandler(async (req, res) => {
@@ -185,12 +190,7 @@ mainContentRouter.patch(
       updates.title = trimmed;
     }
     if (typeof req.body.web_link === "string") {
-      const trimmed = req.body.web_link.trim();
-      if (!trimmed) throw new HttpError("web_link 는 비어 있을 수 없습니다.");
-      if (!URL_REGEX.test(trimmed)) {
-        throw new HttpError("web_link 는 http(s) URL 이어야 합니다.");
-      }
-      updates.web_link = trimmed;
+      updates.web_link = assertHttpUrl(req.body.web_link, "web_link");
     }
 
     if (Object.keys(updates).length === 0) {
@@ -250,10 +250,14 @@ mainContentRouter.patch(
     if (typeof hashArr !== "string" || !hashArr.trim()) {
       throw new HttpError("hashArr는 비어있지 않은 문자열이어야 합니다.");
     }
+    const tag = hashArr.trim();
+    if (tag.length > 64) {
+      throw new HttpError("태그는 64자 이하여야 합니다.");
+    }
 
     const mainContent = await MainContent.findOneAndUpdate(
       { _id: mainContentId },
-      { $addToSet: { hashArr: hashArr.trim() } },
+      { $addToSet: { hashArr: tag } },
       { new: true }
     );
 
