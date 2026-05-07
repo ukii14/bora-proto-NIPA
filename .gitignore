@@ -17,3 +17,15 @@ __pycache__
 
 ## Assets.
 **/static/assets/*.png
+
+## Environment variables (credentials).
+.env
+**/.env
+
+## Node dependencies.
+node_modules
+**/node_modules
+
+## Uploaded files.
+bora-web/backend/uploads/*
+!bora-web/backend/uploads/.gitkeep
