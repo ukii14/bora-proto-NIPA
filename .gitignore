@@ -1,0 +1,19 @@
+## Virtual environment.
+venv
+
+## Temporary ipynb checkpoint files.
+.ipynb_checkpoints
+
+## Pycache.
+__pycache__
+
+## Model weights.
+*.pth
+*.mar
+
+## Logs.
+**/logs
+*.log
+
+## Assets.
+**/static/assets/*.png
