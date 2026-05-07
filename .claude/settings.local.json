@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm uninstall:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Skill(commit)",
+      "Bash(npx depcheck:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(pnpm lint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm generate:docs:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(git *)"
+    ]
+  }
+}

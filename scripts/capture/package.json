@@ -1,0 +1,14 @@
+{
+  "name": "bora-capture",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "seed": "node seed.js",
+    "shoot": "node shoot.js",
+    "all": "node seed.js && node shoot.js"
+  },
+  "dependencies": {
+    "mongoose": "^5.13.5",
+    "playwright": "^1.42.0"
+  }
+}

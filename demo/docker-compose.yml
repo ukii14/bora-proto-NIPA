@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+    streamlit:
+        build:
+            dockerfile: ./Dockerfile
+            context: ./
+        restart: always
+        ports:
+            - "8888:8501"
+        volumes:
+            - ./model:/usr/src/app/model
+            - ./infer.py:/usr/src/app/infer.py
