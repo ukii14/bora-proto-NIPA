@@ -1,0 +1,756 @@
+openapi: 3.0.3
+info:
+  title: Bora Backend API
+  version: 1.0.0
+servers:
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "3000"
+
+tags:
+  - name: Users
+  - name: MainContents
+  - name: Comments
+
+components:
+  securitySchemes:
+    sessionIdHeader:
+      type: apiKey
+      in: header
+      name: sessionid
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - ok
+        - message
+      properties:
+        ok:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "권한이 없습니다."
+
+    UserSessionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        sessionId:
+          type: string
+        name:
+          type: string
+        userId:
+          type: string
+
+    MainContent:
+      type: object
+      properties:
+        _id:
+          type: string
+        user:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+        likes:
+          type: array
+          items:
+            type: string
+        public:
+          type: boolean
+        key:
+          type: string
+        originalFileName:
+          type: string
+        web_link:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        text:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        hashArr:
+          type: array
+          items: {}
+        summary:
+          type: string
+          nullable: true
+        commentsCount:
+          type: integer
+
+    Comment:
+      type: object
+      properties:
+        _id:
+          type: string
+        content:
+          type: string
+        writer:
+          oneOf:
+            - type: string
+            - type: object
+        postId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+paths:
+  /users/register:
+    post:
+      tags:
+        - Users
+      summary: 회원가입
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - username
+                - password
+              properties:
+                name:
+                  type: string
+                username:
+                  type: string
+                  minLength: 3
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSessionResponse"
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/login:
+    patch:
+      tags:
+        - Users
+      summary: 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSessionResponse"
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/logout:
+    patch:
+      tags:
+        - Users
+      summary: 로그아웃
+      security:
+        - sessionIdHeader: []
+      responses:
+        "200":
+          description: 성공
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: 내 세션 정보
+      security:
+        - sessionIdHeader: []
+      responses:
+        "200":
+          description: 성공
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me/mainContents:
+    get:
+      tags:
+        - Users
+      summary: 내 게시물 목록
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: query
+          name: lastid
+          schema:
+            type: string
+          required: false
+          description: 마지막 ObjectId 기준 다음 페이지
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MainContent"
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents:
+    post:
+      tags:
+        - MainContents
+      summary: 콘텐츠 업로드
+      security:
+        - sessionIdHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - mainContent
+              properties:
+                mainContent:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: 파일 배열 (최대 30)
+                public:
+                  type: boolean
+                web_link:
+                  type: string
+                category:
+                  type: string
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MainContent"
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      tags:
+        - MainContents
+      summary: 전체 목록
+      parameters:
+        - in: query
+          name: lastid
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/search:
+    post:
+      tags:
+        - MainContents
+      summary: 검색
+      parameters:
+        - in: query
+          name: value
+          schema:
+            type: string
+          required: false
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  contentsInfo:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MainContent"
+                  postSize:
+                    type: integer
+
+  /mainContents/{mainContentId}:
+    get:
+      tags:
+        - MainContents
+      summary: 상세 조회
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 미존재
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      tags:
+        - MainContents
+      summary: 태그 추가
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hashArr
+              properties:
+                hashArr:
+                  type: string
+                  maxLength: 64
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags:
+        - MainContents
+      summary: 게시물 삭제
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 권한 없음(작성자 불일치 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/meta:
+    patch:
+      tags:
+        - MainContents
+      summary: 메타 수정
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 200
+                web_link:
+                  type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 권한 없음(작성자 불일치 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 리소스 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/like:
+    patch:
+      tags:
+        - MainContents
+      summary: 좋아요
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/unlike:
+    patch:
+      tags:
+        - MainContents
+      summary: 좋아요 취소
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/delTag/{categoryValue}:
+    patch:
+      tags:
+        - MainContents
+      summary: 태그 삭제
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: categoryValue
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/comment:
+    get:
+      tags:
+        - Comments
+      summary: 댓글 목록
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/comment/saveComment:
+    post:
+      tags:
+        - Comments
+      summary: 댓글 작성
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  maxLength: 8000
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mainContents/{mainContentId}/comment/{commentId}:
+    patch:
+      tags:
+        - Comments
+      summary: 댓글 수정
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  maxLength: 8000
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 권한 없음(작성자 불일치 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 리소스 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags:
+        - Comments
+      summary: 댓글 삭제
+      security:
+        - sessionIdHeader: []
+      parameters:
+        - in: path
+          name: mainContentId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+        "400":
+          description: 유효성 오류(ObjectId 형식, 필수값, 길이 제한)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(sessionid 없음/무효/만료)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 권한 없음(작성자 불일치 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
